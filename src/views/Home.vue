@@ -20,7 +20,7 @@ export default {
   },
   mounted () {
     this.initEnvironment();
-    this.initMap();
+    this.initModel()
     this.render();
   },
   methods: {
@@ -54,6 +54,23 @@ export default {
       // 将渲染器添加到dom中
       document.body.appendChild(this.renderer.domElement);
     },
+    initModel () {
+      var curve = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(-10, 0, 0),
+        new THREE.Vector3(-5, 15, 0),
+        new THREE.Vector3(20, 15, 0),
+        new THREE.Vector3(10, 0, 0)
+      );
+
+      var geometry = new THREE.Geometry();
+      geometry.vertices = curve.getPoints(50);
+
+      var material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+
+      // Create the final Object3d to add to the scene
+      var curveObject = new THREE.Line(geometry, material);
+      this.scene.add(curveObject)
+    },
     // 设置相机参数
     setCamera () {
       this.camera = new THREE.PerspectiveCamera(
@@ -67,80 +84,6 @@ export default {
       // 观察点
       this.camera.lookAt(0, 0, 0);
     },
-    onDocumentMouseMove (event) {
-      event.preventDefault();
-    },
-    // 处理地图数据
-    initMap () {
-      console.log("json", chinaJson);
-      // d3-geo转化坐标---可将经纬度转成平面坐标系[x,y]
-      const projection = d3geo
-        .geoMercator()
-        .center([104.0, 37.5])
-        .scale(80)
-        .translate([0, 0]);
-      // 遍历省份构建模型
-      chinaJson.features.forEach(elem => {
-        // 新建一个省份容器：用来存放省份对应的模型和轮廓线
-        const province = new THREE.Object3D();
-        const coordinates = elem.geometry.coordinates;
-        coordinates.forEach(multiPolygon => {
-          console.log("1");
-          multiPolygon.forEach(polygon => {
-            // 循环128次
-            console.log("2");
-            // 这里的坐标要做2次使用：1次用来构建模型，1次用来构建轮廓线
-            const shape = new THREE.Shape();
-            // 一种绘制线框式结构的材料-----轮廓线
-            const lineMaterial = new THREE.LineBasicMaterial({
-              color: "#fff"
-            });
-            // 几何模型
-            const linGeometry = new THREE.Geometry();
-            for (let i = 0; i < polygon.length; i++) {
-              // 转化成平面坐标系
-              const [x, y] = projection(polygon[i]);
-              if (i === 0) {
-                shape.moveTo(x, -y);
-              }
-              shape.lineTo(x, -y);
-              linGeometry.vertices.push(new THREE.Vector3(x, -y, 4.01)); //三维向量（Vector3）
-            }
-            const extrudeSettings = {
-              depth: 4,
-              bevelEnabled: false
-            };
-            // 用形状路径来创建塑形模型
-            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            // 一个以简单着色（平面或线框）方式来绘制几何形状的材料。该材料不受光照影响，没有光照也能着色
-            const material = new THREE.MeshBasicMaterial({
-              color: "#3B9FFC",
-              transparent: true,
-              opacity: 0.7
-            });
-            // 网孔--几何模型和材料为参数
-            const mesh = new THREE.Mesh(geometry, material);
-            const line = new THREE.Line(linGeometry, lineMaterial);
-            province.add(mesh);
-            province.add(line);
-          });
-        });
-        // 将geojson的properties放到模型中，后面会用到
-        province.properties = elem.properties;
-        if (elem.properties.centroid) {
-          const [x, y] = projection(elem.properties.centroid);
-          province.properties._centroid = [x, y];
-        }
-        this.map.add(province);
-      });
-      this.scene.add(this.map);
-    },
-    // 动画循环
-    // loop() {
-    //   // this.showName();
-    //   this.render();
-    //   // requestAnimationFrame(this.loop);
-    // },
     // 渲染画布
     render () {
       this.renderer.render(this.scene, this.camera);

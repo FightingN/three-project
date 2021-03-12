@@ -12,15 +12,16 @@
 import chinaJson from "./config/qingdao.json";
 import * as d3geo from "d3-geo";
 export default {
-  data () {
+  data() {
     return {
       scene: null, // 场景
       camera: null, // 摄像机
       renderer: null, // 渲染器
-      map: null // 地图容器
+      map: null, // 地图容器
+      curveObject: null //迁移线
     };
   },
-  mounted () {
+  mounted() {
     // 初始化3D环境
     this.initEnvironment();
     // 构建光照系统
@@ -34,7 +35,7 @@ export default {
   },
   methods: {
     // 初始化3D环境
-    initEnvironment () {
+    initEnvironment() {
       this.scene = new THREE.Scene();
       this.scene.background = new THREE.Color("black");
       // 建一个空对象存放对象
@@ -52,16 +53,20 @@ export default {
       document.addEventListener("mousemove", this.onDocumentMouseMove, false);
       window.addEventListener("resize", this.onWindowResize, false);
     },
-    initMap () {
+    initMap() {
       console.log("json", chinaJson);
       // d3-geo转化坐标
       const projection = d3geo
         .geoMercator()
-        .center([120.440292, 36.159477])
+        .center([120.447352, 36.390847])
         .scale(2000)
         .translate([0, 0]);
       // 遍历省份构建模型
       chinaJson.features.forEach(elem => {
+        // 获取迁移线的xy坐标
+        const [endX, endY] = projection(elem.properties.center);
+        const [startX, startY] = projection([120.447352, 36.390847]);
+        this.drawMetapLine(startX, -startY, endX, -endY);
         // 新建一个省份容器：用来存放省份对应的模型和轮廓线
         const province = new THREE.Object3D();
         const coordinates = elem.geometry.coordinates;
@@ -104,10 +109,31 @@ export default {
           province.properties._centroid = [x, y];
         }
         this.map.add(province);
+        this.scene.add(this.curveObject);
       });
       this.scene.add(this.map);
     },
-    setCamera () {
+    // 绘制迁徙线条函数
+    drawMetapLine(startX, startY, endX, endY) {
+      /************迁移线-----开始 *********/
+      var curve = new THREE.QuadraticBezierCurve3(
+        new THREE.Vector3(startX, startY, 5), //起始点
+        new THREE.Vector3((startX + endX) / 2, (startY + endY) / 2, 20),
+        new THREE.Vector3(endX, endY, 5) //终点--城市的终点
+      );
+      // 几何模型---相当于一个物体
+      var geometry = new THREE.Geometry();
+      geometry.vertices = curve.getPoints(100);
+      // 基础线条材料------线性材质LineBasicMaterial
+      var material = new THREE.LineBasicMaterial({
+        color: "#F7BD63",
+        linewidth: 1
+      });
+      // 相当于整个物体
+      this.curveObject = new THREE.Line(geometry, material);
+      /************迁移线-----结束 ********************/
+    },
+    setCamera() {
       this.camera = new THREE.PerspectiveCamera(
         35,
         window.innerWidth / window.innerHeight,
@@ -118,7 +144,7 @@ export default {
       this.camera.lookAt(0, 0, 0);
     },
     // 显示名称
-    showName () {
+    showName() {
       const width = window.innerWidth;
       const height = window.innerHeight;
       let canvas = document.querySelector("#name");
@@ -187,7 +213,7 @@ export default {
       ctx.drawImage(offCanvas, 0, 0);
     },
     // 构建辅助系统: 网格和坐标
-    buildAuxSystem () {
+    buildAuxSystem() {
       // let axisHelper = new THREE.AxisHelper(0);//轴线的长度
       // this.scene.add(axisHelper);
       // let gridHelper = new THREE.GridHelper(
@@ -197,7 +223,7 @@ export default {
       //   "rgba(0,0,0,0)"
       // );
       // this.scene.add(gridHelper);
-      let controls = new THREE.OrbitControls(//OrbitControls.js可以对Threejs的三维场景进行缩放、平移、旋转操作
+      let controls = new THREE.OrbitControls( //OrbitControls.js可以对Threejs的三维场景进行缩放、平移、旋转操作
         this.camera,
         this.renderer.domElement
       );
@@ -206,7 +232,7 @@ export default {
       controls.rotateSpeed = 0.35;
     },
     // 光照系统
-    buildLightSystem () {
+    buildLightSystem() {
       let directionalLight = new THREE.DirectionalLight(0xffffff, 1.1);
       directionalLight.position.set(300, 1000, 500);
       directionalLight.target.position.set(0, 0, 0);
@@ -235,64 +261,105 @@ export default {
      * textValue表示标记内容
      * fontColor表示标记字体颜色
      * fontSize表示字体大小
-    **/
-    drawMarkingFont (option, markingIndex) {
+     **/
+    drawMarkingFont(option, markingIndex) {
       var average = getAverage();
       var cityX = option.pos[0];
       var cityY = option.pos[1];
       var markingGroup = new THREE.Group();
       // 圆锥体
       var cylinder = new THREE.Mesh(
-        new THREE.CylinderGeometry(circularRadio, 0, circularHeight, 50, 50, false),
+        new THREE.CylinderGeometry(
+          circularRadio,
+          0,
+          circularHeight,
+          50,
+          50,
+          false
+        ),
         new THREE.MeshBasicMaterial({
           color: markingColor
         })
-      )
+      );
       // 球体
       var ball = new THREE.Mesh(
         new THREE.SphereGeometry(circularRadio, 30, 30),
         new THREE.MeshBasicMaterial({
           color: markingColor
         })
-      )
+      );
       ball.position.set(cityX, cityY, circularHeight + zHeight);
       cylinder.position.set(cityX, cityY, circularHeight / 2 + zHeight);
       cylinder.rotation.x = 1.5;
       // 添加文字说明
-      var textLength = option.textValue.split('').length;
-      var texture = new THREE.CanvasTexture(getCanvasFont(textLength * option.fontSize * average, option.fontSize * average, option.textValue, option.fontColor));
+      var textLength = option.textValue.split("").length;
+      var texture = new THREE.CanvasTexture(
+        getCanvasFont(
+          textLength * option.fontSize * average,
+          option.fontSize * average,
+          option.textValue,
+          option.fontColor
+        )
+      );
       var fontMesh = new THREE.Sprite(
         new THREE.SpriteMaterial({
           map: texture
         })
-      )
-      fontMesh.scale.x = option.fontSize / average * textLength;
+      );
+      fontMesh.scale.x = (option.fontSize / average) * textLength;
       fontMesh.scale.y = option.fontSize / average;
       // 定义提示文字显示位置
-      fontMesh.position.set(cityX, cityY, circularHeight + circularRadio / 2 + zHeight / 2 + option.fontSize / average + 0.5);
+      fontMesh.position.set(
+        cityX,
+        cityY,
+        circularHeight +
+          circularRadio / 2 +
+          zHeight / 2 +
+          option.fontSize / average +
+          0.5
+      );
       markingGroup.add(ball);
       markingGroup.add(cylinder);
       markingGroup.add(fontMesh);
-      markingObj['markingGroup' + markingIndex] = markingGroup;
+      markingObj["markingGroup" + markingIndex] = markingGroup;
       scene.add(markingGroup);
     },
     // 根据浏览器窗口变化动态更新尺寸
-    onWindowResize () {
+    onWindowResize() {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     },
-    onDocumentMouseMove (event) {
+    onDocumentMouseMove(event) {
       event.preventDefault();
     },
     // 动画循环
-    loop () {
+    loop() {
       this.showName();
       this.render();
       requestAnimationFrame(this.loop);
     },
     // 渲染画布
-    render () {
+    render() {
+      // var geometry = new THREE.ConeGeometry(5, 20, 32);
+      // var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+      // var cone = new THREE.Mesh(geometry, material);
+      // this.scene.add(cone);
+      var curve = new THREE.CubicBezierCurve3(
+        new THREE.Vector3(-10, 0, 0),
+        new THREE.Vector3(-5, 15, 0),
+        new THREE.Vector3(20, 15, 0),
+        new THREE.Vector3(10, 0, 0)
+      );
+
+      var geometry = new THREE.Geometry();
+      geometry.vertices = curve.getPoints(50);
+
+      var material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+
+      // Create the final Object3d to add to the scene
+      var curveObject = new THREE.Line(geometry, material);
+
       this.renderer.render(this.scene, this.camera);
     }
   }
