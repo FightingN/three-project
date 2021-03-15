@@ -262,7 +262,6 @@ export default {
      */
     animate() {
       requestAnimationFrame(this.animate.bind(this))
-
       // required if controls.enableDamping or controls.autoRotate are set to true
       this.controls.update()
 
@@ -290,9 +289,11 @@ export default {
      * @desc 节流，防抖
      */
     doAnimate() {
+      // 线段的长度是20,每一段一个颜色,通过循环及动画改变每段的颜色，生成动画效果
       let ratio = this.colorIndex / this.pointsLength
       this.flyGroup &&
         this.flyGroup.children.forEach(d => {
+          console.log('d', d)
           d.geometry.colors = new Array(this.pointsLength)
             .fill(1)
             .map((d, i) => {
