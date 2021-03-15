@@ -10,12 +10,14 @@ import qingdaoJson from '../../utils/qingdao.json'
 import chinaJson from '../../utils/map/china.json'
 import * as d3 from 'd3-geo'
 import { util } from '../../utils/utils.js'
+import img1 from '../../assets/lightray.jpg'
+import img2 from '../../assets/lightray_yellow.jpg'
 export default {
   name: 'three-map',
   data() {
     return {
-      img1: require('../../assets/lightray.jpg'),
-      img2: require('../../assets/lightray_yellow.jpg'),
+      img1,
+      img2,
       mapData: util.decode(chinaJson),
       scene: null, // 场景
       camera: null, // 摄像机
@@ -27,8 +29,8 @@ export default {
       colors: ['#fff', '#ff0'],
       colorIndex: 0,
       textures: [
-        new THREE.TextureLoader().load(this.img1),
-        new THREE.TextureLoader().load(this.img2)
+        new THREE.TextureLoader().load(img1),
+        new THREE.TextureLoader().load(img2)
       ],
       pointsLength: 20,
       datas: [
@@ -126,7 +128,6 @@ export default {
      * @desc 绘制地图
      */
     drawMap() {
-      console.log(this.mapData, '111')
       if (!this.mapData) {
         console.error('this.mapData 数据不能是null')
         return
@@ -150,9 +151,6 @@ export default {
           })
         })
       })
-
-      console.log(this.mapData)
-
       // 绘制地图模型
       const group = new THREE.Group()
       const lineGroup = new THREE.Group()
@@ -184,6 +182,7 @@ export default {
       this.scene.add(lineGroup)
       this.scene.add(lineGroupBottom)
       this.scene.add(group)
+      console.log('group', group)
     },
     /**
      * @desc 绘制地图模型 points 是一个二维数组 [[x,y], [x,y], [x,y]]
@@ -282,10 +281,8 @@ export default {
     setDataKeys() {
       this.mapData.features.forEach(d => {
         const { name, cp } = d.properties
-        console.log('name', name, d.properties)
         this.dataKeys[name] = [...cp]
       })
-      console.log(this.dataKeys)
     },
 
     /**
@@ -293,7 +290,6 @@ export default {
      */
     doAnimate() {
       let ratio = this.colorIndex / this.pointsLength
-      console.log('doAnimate', this.flyGroup)
       this.flyGroup &&
         this.flyGroup.children.forEach(d => {
           d.geometry.colors = new Array(this.pointsLength)
@@ -307,7 +303,6 @@ export default {
             })
           d.geometry.colorsNeedUpdate = true
         })
-      console.log('this.flyGroup', this.flyGroup)
       //六边形的动画
       this.sixLineGroup &&
         this.sixLineGroup.children.forEach(d => {
@@ -430,7 +425,9 @@ export default {
       })
       this.flyGroup = group
       this.scene.add(group)
-    }
+    },
+    // 鼠标点击事件
+    clickRaycaster() {}
   }
 }
 </script>
