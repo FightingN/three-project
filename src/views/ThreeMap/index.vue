@@ -95,6 +95,7 @@ export default {
       this.drawMap()
       this.setControl()
       this.animate()
+      document.body.addEventListener('click', this.mouseEvent.bind(this))
     },
     /**
      * @desc 相机
@@ -425,6 +426,69 @@ export default {
       })
       this.flyGroup = group
       this.scene.add(group)
+    },
+    /**
+     * @desc 鼠标事件处理
+     */
+    mouseEvent(event) {
+      console.log('点击事件')
+      if (!this.raycaster) {
+        this.raycaster = new THREE.Raycaster()
+      }
+      if (!this.mouse) {
+        this.mouse = new THREE.Vector2()
+      }
+      if (!this.meshes) {
+        this.meshes = []
+        this.group.children.forEach(g => {
+          g.children.forEach(mesh => {
+            this.meshes.push(mesh)
+          })
+        })
+      }
+
+      // 将鼠标位置归一化为设备坐标。x 和 y 方向的取值范围是 (-1 to +1)
+      this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+      this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+
+      // 通过摄像机和鼠标位置更新射线
+      this.raycaster.setFromCamera(this.mouse, this.camera)
+
+      // 计算物体和射线的焦点
+      const intersects = this.raycaster.intersectObjects(this.meshes)
+      console.log('intersects', intersects[0].object.parent, event)
+      if (intersects.length > 0) {
+        this.clickFunction(event, intersects[0].object.parent)
+      }
+    },
+    /**
+     * @desc 设置区域颜色
+     */
+    setAreaColor(g, color = '#ff0') {
+      // 恢复颜色
+      g.parent.children.forEach(gs => {
+        gs.children.forEach(mesh => {
+          mesh.material.color.set(this.color)
+        })
+      })
+
+      // 设置颜色
+      g.children.forEach(mesh => {
+        mesh.material.color.set(color)
+      })
+    },
+    /**
+     * @desc 绑定事件
+     */
+    on(eventName, func) {
+      if (eventName === 'click') {
+        this.clickFunction = func
+      }
+    },
+    clickFunction() {
+      this.on('click', (d, g) => {
+        this.setAreaColor(g)
+      })
     },
     // 鼠标点击事件
     clickRaycaster() {}
