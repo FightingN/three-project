@@ -28,6 +28,7 @@ export default {
       dataKeys: {},
       colors: ['#fff', '#ff0'],
       colorIndex: 0,
+      colorIndex2: 20,
       textures: [
         new THREE.TextureLoader().load(img1),
         new THREE.TextureLoader().load(img2)
@@ -293,18 +294,38 @@ export default {
       let ratio = this.colorIndex / this.pointsLength
       this.flyGroup &&
         this.flyGroup.children.forEach(d => {
-          console.log('d', d)
           d.geometry.colors = new Array(this.pointsLength)
             .fill(1)
             .map((d, i) => {
-              if (i !== this.colorIndex) {
-                return new THREE.Color('#005fc4')
+              if (i == this.colorIndex2) {
+                return new THREE.Color('red')
               } else {
                 return new THREE.Color('#FFE400')
               }
             })
           d.geometry.colorsNeedUpdate = true
         })
+      this.colorIndex2--
+      if (this.colorIndex < 1) {
+        this.colorIndex2 = 20
+      }
+      // 往里的动画
+      // this.flyGroup &&
+      //   this.flyGroup.children.forEach(d => {
+      //     console.log('d', d)
+      //     d.geometry.colors = new Array(this.pointsLength)
+      //       .fill(1)
+      //       .map((d, i) => {
+      //         if (i !== this.colorIndex) {
+      //           console.log('1')
+      //           return new THREE.Color('#005fc4')
+      //         } else {
+      //           console.log('2')
+      //           return new THREE.Color('#FFE400')
+      //         }
+      //       })
+      //     d.geometry.colorsNeedUpdate = true
+      //   })
       //六边形的动画
       this.sixLineGroup &&
         this.sixLineGroup.children.forEach(d => {
