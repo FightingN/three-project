@@ -1,5 +1,7 @@
 <template>
-  <div></div>
+  <div>
+    <canvas id="canvas"></canvas>
+  </div>
 </template>
 
 <script>
@@ -13,6 +15,12 @@ export default {
       orbitcontrols: null, // 控制器
       map: null // 地图容器
     }
+  },
+  mounted() {
+    this.initEnvironment()
+    this.initModel()
+    this.drawText()
+    this.render()
   },
   methods: {
     // 初始化3D环境
@@ -72,10 +80,24 @@ export default {
       // 观察点
       this.camera.lookAt(0, 0, 0)
     },
+    drawText() {
+      let url = '/js/threejs-r126/fonts/FZLanTingHeiS-DB-GB_Regular.json'
+      var textLoad = new THREE.FontLoader().load(url, font => {
+        var txtGeo = new THREE.TextGeometry('你好', {
+          font: font,
+          size: 3,
+          height: 1,
+          weight: 'normal'
+        })
+        var txtMater = new THREE.MeshBasicMaterial({ color: 'red' })
+        var txtMesh = new THREE.Mesh(txtGeo, txtMater)
+        txtMesh.position.set(0, 0, 0)
+        this.scene.add(txtMesh)
+        this.renderer.render(this.scene, this.camera)
+      })
+    },
     // 渲染画布
-    render() {
-      this.renderer.render(this.scene, this.camera)
-    }
+    render() {}
   }
 }
 </script>

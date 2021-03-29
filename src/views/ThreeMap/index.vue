@@ -11,6 +11,7 @@ import chinaJson from '../../utils/map/china.json'
 import * as d3 from 'd3-geo'
 import { util } from '../../utils/utils.js'
 import img1 from '../../assets/lightray.jpg'
+// import img1 from '../../assets/1.png'
 import img2 from '../../assets/lightray_yellow.jpg'
 export default {
   name: 'three-map',
@@ -70,12 +71,15 @@ export default {
     }
   },
   mounted() {
+    console.log('mapData', this.mapData)
     this.init()
     this.setDataKeys()
     // 绘制光柱
     this.drawLightBar(this.datas)
+    this.drawText(this.datas)
     // 绘制线条
     this.drawFlyLine(this.flyDatas)
+    // this.drawText()
   },
   created() {},
   methods: {
@@ -298,7 +302,7 @@ export default {
             .fill(1)
             .map((d, i) => {
               if (i == this.colorIndex2) {
-                return new THREE.Color('red')
+                return new THREE.Color('#005fc4')
               } else {
                 return new THREE.Color('#FFE400')
               }
@@ -330,7 +334,7 @@ export default {
       this.sixLineGroup &&
         this.sixLineGroup.children.forEach(d => {
           d.scale.set(1 + ratio, 1 + ratio, d.scale.z)
-          d.material.opacity = 1 - ratio
+          // d.material.opacity = 1 - ratio
         })
       this.colorIndex++
       if (this.colorIndex > this.pointsLength - 1) {
@@ -341,10 +345,11 @@ export default {
     /**
      * @desc 绘制6边形
      */
-    drawSixMesh(x, y, z, i, size = 6) {
+    drawSixMesh(x, y, z, i, size = 20) {
       const geometry = new THREE.CircleGeometry(0.5, size)
       const material = new THREE.MeshBasicMaterial({
-        color: this.colors[i % 2]
+        // color: this.colors[i % 2]
+        color: 'red'
       })
       const mesh = new THREE.Mesh(geometry, material)
       mesh.position.set(x, y, z + 0.1)
@@ -356,10 +361,11 @@ export default {
      */
     drawSixLineLoop(x, y, z, i) {
       // 绘制六边型
-      const geometry = new THREE.CircleGeometry(0.7, 6)
+      const geometry = new THREE.CircleGeometry(0.6, 20)
       const material = new THREE.MeshBasicMaterial({
-        color: this.colors[i % 2],
-        transparent: true
+        // color: this.colors[i % 2]
+        color: 'red'
+        // transparent: true
       })
       geometry.vertices.shift()
       const line = new THREE.LineLoop(geometry, material)
@@ -375,9 +381,9 @@ export default {
       const geometry = new THREE.PlaneGeometry(1, hei)
       const material = new THREE.MeshBasicMaterial({
         map: this.textures[i % 2],
-        depthTest: false,
-        transparent: true,
-        color: this.colors[i % 2],
+        depthTest: false, //是否在渲染这种材料时启用深度测试
+        // transparent: true,
+        // color: this.colors[i % 2],
         side: THREE.DoubleSide,
         blending: THREE.AdditiveBlending
       })
@@ -410,12 +416,10 @@ export default {
         group.add(plane2)
         group.add(plane1)
       })
-
       this.sixLineGroup = sixLineGroup
       this.scene.add(group)
       this.scene.add(sixLineGroup)
     },
-
     /**
      * @desc 绘制飞线
      */
@@ -513,7 +517,36 @@ export default {
       })
     },
     // 鼠标点击事件
-    clickRaycaster() {}
+    clickRaycaster() {},
+    /**
+     * @desc 绘制文本
+     */
+    drawText(data) {
+      const groupText = new THREE.Group()
+      data.forEach((d, i) => {
+        const lnglat = this.dataKeys[d.name]
+        const [x, y, z] = this.lnglatToMector(lnglat)
+        let url = '/js/threejs-r126/fonts/FZLanTingHeiS-DB-GB_Regular.json'
+        var textLoad = new THREE.FontLoader().load(url, font => {
+          var txtGeo = new THREE.TextGeometry(d.name, {
+            font: font,
+            size: 0.5,
+            height: 0.1,
+            weight: 'normal'
+          })
+          var txtMater = new THREE.MeshBasicMaterial({
+            color: '#fff',
+            opacity: 0.5,
+            transparent: true
+          })
+          var txtMesh = new THREE.Mesh(txtGeo, txtMater)
+          txtMesh.position.set(x - 1, y - 1, z)
+          groupText.add(txtMesh)
+        })
+      })
+      this.scene.add(groupText)
+      this.renderer.render(this.scene, this.camera)
+    }
   }
 }
 </script>
