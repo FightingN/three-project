@@ -127,8 +127,10 @@ export default {
     setRender() {
       this.renderer = new THREE.WebGLRenderer({
         alpha: true,
+        antialias: true, //抗锯齿
         canvas: document.querySelector('canvas')
       })
+      this.renderer.setPixelRatio(window.devicePixelRatio)
       this.renderer.setSize(window.innerWidth, window.innerHeight)
     },
     /**
