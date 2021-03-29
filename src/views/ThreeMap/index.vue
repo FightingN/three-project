@@ -13,6 +13,7 @@ import { util } from '../../utils/utils.js'
 import img1 from '../../assets/lightray.jpg'
 // import img1 from '../../assets/1.png'
 import img2 from '../../assets/lightray_yellow.jpg'
+import img3 from '../../assets/branch.png'
 export default {
   name: 'three-map',
   data() {
@@ -30,10 +31,11 @@ export default {
       colors: ['#fff', '#ff0'],
       colorIndex: 0,
       colorIndex2: 20,
-      textures: [
-        new THREE.TextureLoader().load(img1),
-        new THREE.TextureLoader().load(img2)
-      ],
+      // textures: [
+      //   new THREE.TextureLoader().load(img3),
+      //   new THREE.TextureLoader().load(img3)
+      // ],
+      textures: new THREE.TextureLoader().load(img3),
       pointsLength: 20,
       datas: [
         { name: '海南省', value: 60 },
@@ -79,7 +81,6 @@ export default {
     this.drawText(this.datas)
     // 绘制线条
     this.drawFlyLine(this.flyDatas)
-    // this.drawText()
   },
   created() {},
   methods: {
@@ -93,7 +94,7 @@ export default {
         1,
         1000
       )
-      this.setCamera({ x: 300, y: 0, z: 100 })
+      this.setCamera({ x: 200, y: 0, z: 100 })
       this.setLight()
       this.setRender()
       this.setHelper()
@@ -377,25 +378,22 @@ export default {
      * @desc 柱子
      */
     drawPlane(x, y, z, value, i) {
-      const hei = value / 10
+      const hei = value / 30
       const geometry = new THREE.PlaneGeometry(1, hei)
       const material = new THREE.MeshBasicMaterial({
-        map: this.textures[i % 2],
-        depthTest: false, //是否在渲染这种材料时启用深度测试
-        // transparent: true,
-        // color: this.colors[i % 2],
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending
+        map: this.textures,
+        depthTest: false, //不显示黑色
+        transparent: true,
+        side: THREE.DoubleSide
+        // color: 'red'
       })
       const plane = new THREE.Mesh(geometry, material)
       plane.position.set(x, y, z + hei / 2)
       plane.rotation.x = Math.PI / 2
-      plane.rotation.z = Math.PI
       const plane2 = plane.clone()
       plane2.rotation.y = Math.PI / 2
       return [plane, plane2]
     },
-
     /**
      * @desc 绘制光柱
      */
@@ -490,7 +488,7 @@ export default {
     /**
      * @desc 设置区域颜色
      */
-    setAreaColor(g, color = '#ff0') {
+    setAreaColor(g, color = '#3EEEF0') {
       // 恢复颜色
       g.parent.children.forEach(gs => {
         gs.children.forEach(mesh => {
