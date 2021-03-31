@@ -13,13 +13,14 @@ import { util } from '../../utils/utils.js'
 import img1 from '../../assets/lightray.jpg'
 // import img1 from '../../assets/1.png'
 import img2 from '../../assets/lightray_yellow.jpg'
-import img3 from '../../assets/branch.png'
+import img3 from '../../assets/2.png'
 export default {
   name: 'three-map',
   data() {
     return {
       img1,
       img2,
+      img3,
       mapData: util.decode(chinaJson),
       scene: null, // 场景
       camera: null, // 摄像机
@@ -73,7 +74,6 @@ export default {
     }
   },
   mounted() {
-    console.log('mapData', this.mapData)
     this.init()
     this.setDataKeys()
     // 绘制光柱
@@ -214,10 +214,11 @@ export default {
         bevelEnabled: false
       })
       const material = new THREE.MeshBasicMaterial({
-        color: this.color,
-        transparent: true,
-        opacity: 0.6,
-        side: THREE.DoubleSide
+        color: '#05398f',
+        transparent: false,
+        opacity: 0.9,
+        side: THREE.DoubleSide,
+        depthTest: false
       })
       const mesh = new THREE.Mesh(geometry, material)
       return mesh
@@ -263,6 +264,10 @@ export default {
      */
     setControl() {
       this.controls = new THREE.OrbitControls(this.camera)
+      // this.controls = new THREE.OrbitControls(
+      //   this.camera,
+      //   this.renderer.domElement
+      // )
       this.controls.update()
     },
     /**
@@ -379,22 +384,57 @@ export default {
     /**
      * @desc 柱子
      */
+    // drawPlane(x, y, z, value, i) {
+    //   const hei = value / 30
+    //   const geometry = new THREE.PlaneGeometry(1, hei)
+    //   const material = new THREE.MeshBasicMaterial({
+    //     map: this.textures,
+    //     depthTest: false, //不显示黑色
+    //     transparent: true,
+    //     side: THREE.DoubleSide
+    //     // color: 'red'
+    //   })
+    //   const plane = new THREE.Mesh(geometry, material)
+    //   plane.position.set(x, y, z + hei / 2)
+    //   plane.rotation.x = Math.PI / 2
+    //   const plane2 = plane.clone()
+    //   plane2.rotation.y = Math.PI / 2
+    //   return [plane, plane2]
+    // },
     drawPlane(x, y, z, value, i) {
-      const hei = value / 30
-      const geometry = new THREE.PlaneGeometry(1, hei)
-      const material = new THREE.MeshBasicMaterial({
-        map: this.textures,
-        depthTest: false, //不显示黑色
-        transparent: true,
-        side: THREE.DoubleSide
-        // color: 'red'
+      return new Promise((resolve, reject) => {
+        let arr = []
+        const hei = value / 30
+        /*1、创建一个画布，记得设置画布的宽高，否则将使用默认宽高，有可能会导致图像显示变形*/
+        let canvas = document.createElement('canvas')
+        canvas.width = 64
+        canvas.height = 128
+        /*2、创建图形，这部分可以去看w3c canvas教程*/
+        let ctx = canvas.getContext('2d')
+        var img = new Image()
+        img.src = this.img3
+        img.onload = function() {
+          // 将图片画到canvas上面上去！
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+          // /*3、将canvas作为纹理，创建Sprite*/
+          let texture = new THREE.Texture(canvas)
+          texture.needsUpdate = true //注意这句不能少
+          let material = new THREE.SpriteMaterial({
+            map: texture,
+            depthTest: false,
+            rotation: 0,
+            transparent: true,
+            sizeAttenuation: false
+          })
+          var plane1 = new THREE.Sprite(material)
+          plane1.position.set(x, y, z + 0.6)
+          plane1.scale.set(1, 1.1, 1.1)
+          var plane2 = plane1.clone()
+          arr.push(plane1)
+          arr.push(plane2)
+          resolve(arr)
+        }
       })
-      const plane = new THREE.Mesh(geometry, material)
-      plane.position.set(x, y, z + hei / 2)
-      plane.rotation.x = Math.PI / 2
-      const plane2 = plane.clone()
-      plane2.rotation.y = Math.PI / 2
-      return [plane, plane2]
     },
     /**
      * @desc 绘制光柱
@@ -402,7 +442,7 @@ export default {
     drawLightBar(data) {
       const group = new THREE.Group()
       const sixLineGroup = new THREE.Group()
-      data.forEach((d, i) => {
+      data.forEach(async (d, i) => {
         const lnglat = this.dataKeys[d.name]
         const [x, y, z] = this.lnglatToMector(lnglat)
 
@@ -412,7 +452,7 @@ export default {
         sixLineGroup.add(this.drawSixLineLoop(x, y, z, i))
 
         // 绘制柱子
-        const [plane1, plane2] = this.drawPlane(x, y, z, d.value, i)
+        const [plane1, plane2] = await this.drawPlane(x, y, z, d.value, i)
         group.add(plane2)
         group.add(plane1)
       })
@@ -460,9 +500,11 @@ export default {
       console.log('点击事件')
       if (!this.raycaster) {
         this.raycaster = new THREE.Raycaster()
+        console.log('1')
       }
       if (!this.mouse) {
         this.mouse = new THREE.Vector2()
+        console.log('2')
       }
       if (!this.meshes) {
         this.meshes = []
@@ -471,6 +513,7 @@ export default {
             this.meshes.push(mesh)
           })
         })
+        console.log('3')
       }
 
       // 将鼠标位置归一化为设备坐标。x 和 y 方向的取值范围是 (-1 to +1)
@@ -490,11 +533,11 @@ export default {
     /**
      * @desc 设置区域颜色
      */
-    setAreaColor(g, color = '#3EEEF0') {
+    setAreaColor(g, color = '#50D6FB') {
       // 恢复颜色
       g.parent.children.forEach(gs => {
         gs.children.forEach(mesh => {
-          mesh.material.color.set(this.color)
+          mesh.material.color.set('#05398f')
         })
       })
 
@@ -536,7 +579,7 @@ export default {
           })
           var txtMater = new THREE.MeshBasicMaterial({
             color: '#fff',
-            opacity: 0.5,
+            opacity: 0.9,
             transparent: true
           })
           var txtMesh = new THREE.Mesh(txtGeo, txtMater)
