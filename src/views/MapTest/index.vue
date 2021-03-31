@@ -19,6 +19,7 @@ export default {
   mounted() {
     this.initEnvironment()
     this.initModel()
+    this.drawDialog()
     this.drawText()
     this.render()
   },
@@ -95,6 +96,37 @@ export default {
         this.scene.add(txtMesh)
         this.renderer.render(this.scene, this.camera)
       })
+    },
+    // 弹框
+    textStyle(text) {
+      let width = 512,
+        height = 256
+      let canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      let ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#C3C3C3'
+      ctx.fillRect(0, 0, width, height)
+      ctx.font = 50 + 'px  bold'
+      ctx.fillStyle = '#2891FF'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(text, width / 2, height / 2)
+      return canvas
+    },
+    elvesBounc(text) {
+      const spriteMaterial = new THREE.SpriteMaterial({
+        color: 0xdcdfd3,
+        map: new THREE.CanvasTexture(this.textStyle(text))
+      })
+      const sprite = new THREE.Sprite(spriteMaterial)
+      sprite.scale.set(10, 10, 1)
+      return sprite
+    },
+    drawDialog() {
+      let model = this.elvesBounc('我是小蜜蜂') //调用
+      model.position.set(0, 0, 0)
+      this.scene.add(model)
     },
     // 渲染画布
     render() {}

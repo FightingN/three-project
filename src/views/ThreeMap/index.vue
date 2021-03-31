@@ -70,7 +70,9 @@ export default {
         { source: { name: '西藏自治区' }, target: { name: '四川省' } },
         { source: { name: '新疆维吾尔自治区' }, target: { name: '四川省' } },
         { source: { name: '青海省' }, target: { name: '四川省' } }
-      ]
+      ],
+      eventCoordinate: [], //点击的坐标
+      model: null //弹框模型
     }
   },
   mounted() {
@@ -526,6 +528,13 @@ export default {
       // 计算物体和射线的焦点
       const intersects = this.raycaster.intersectObjects(this.meshes)
       console.log('intersects', intersects[0].object.parent, event)
+      console.log('intersects[0].point.x', intersects[0].point.x)
+      console.log('intersects[0].point.x', intersects[0].point.y)
+      console.log('intersects[0].point.x', intersects[0].point.z)
+      if (this.model) {
+        this.scene.remove(this.model)
+      }
+      this.drawDialogText(intersects[0].point.x, intersects[0].point.y, 0)
       if (intersects.length > 0) {
         this.clickFunction(event, intersects[0].object.parent)
       }
@@ -543,6 +552,7 @@ export default {
 
       // 设置颜色
       g.children.forEach(mesh => {
+        console.log('mesh', mesh)
         mesh.material.color.set(color)
       })
     },
@@ -589,6 +599,39 @@ export default {
       })
       this.scene.add(groupText)
       this.renderer.render(this.scene, this.camera)
+    },
+    /**
+     * @desc 绘制弹框文本
+     */
+    drawDialogText(x, y, z) {
+      // 思路:
+      this.model = this.elvesBounc('弹框') //调用
+      this.model.position.set(x, y, 3)
+      this.scene.add(this.model)
+    },
+    textStyle(text) {
+      let width = 100,
+        height = 100
+      let canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      let ctx = canvas.getContext('2d')
+      ctx.fillRect(0, 0, width, height)
+      ctx.font = 20 + 'px  bold'
+      ctx.fillStyle = '#fff'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(text, width / 2, height / 2)
+      return canvas
+    },
+    elvesBounc(text) {
+      const spriteMaterial = new THREE.SpriteMaterial({
+        color: 0xdcdfd3,
+        map: new THREE.CanvasTexture(this.textStyle(text))
+      })
+      const sprite = new THREE.Sprite(spriteMaterial)
+      sprite.scale.set(2, 2, 1)
+      return sprite
     }
   }
 }
