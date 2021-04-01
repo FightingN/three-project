@@ -499,14 +499,12 @@ export default {
      * @desc 鼠标事件处理
      */
     mouseEvent(event) {
-      console.log('点击事件')
+      console.log('点击事件mouseEvent')
       if (!this.raycaster) {
         this.raycaster = new THREE.Raycaster()
-        console.log('1')
       }
       if (!this.mouse) {
         this.mouse = new THREE.Vector2()
-        console.log('2')
       }
       if (!this.meshes) {
         this.meshes = []
@@ -515,28 +513,26 @@ export default {
             this.meshes.push(mesh)
           })
         })
-        console.log('3')
       }
-
       // 将鼠标位置归一化为设备坐标。x 和 y 方向的取值范围是 (-1 to +1)
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
-
       // 通过摄像机和鼠标位置更新射线
       this.raycaster.setFromCamera(this.mouse, this.camera)
-
       // 计算物体和射线的焦点
-      const intersects = this.raycaster.intersectObjects(this.meshes)
-      console.log('intersects', intersects[0].object.parent, event)
-      console.log('intersects[0].point.x', intersects[0].point.x)
-      console.log('intersects[0].point.x', intersects[0].point.y)
-      console.log('intersects[0].point.x', intersects[0].point.z)
+      const intersects = this.raycaster.intersectObjects(this.meshes, true)
       if (this.model) {
         this.scene.remove(this.model)
       }
       this.drawDialogText(intersects[0].point.x, intersects[0].point.y, 0)
+      this.meshes.push(this.model)
       if (intersects.length > 0) {
-        this.clickFunction(event, intersects[0].object.parent)
+        if (intersects[0].object.userData.type === 'dropdown') {
+          // intersects[0].object.material.color.set('red')
+          alert('点击了弹框')
+        } else {
+          this.clickFunction(event, intersects[0].object.parent)
+        }
       }
     },
     /**
@@ -631,6 +627,9 @@ export default {
       })
       const sprite = new THREE.Sprite(spriteMaterial)
       sprite.scale.set(2, 2, 1)
+      sprite.userData = {
+        type: 'dropdown'
+      }
       return sprite
     }
   }

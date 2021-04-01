@@ -13,7 +13,8 @@ export default {
       camera: null, // 摄像机
       renderer: null, // 渲染器---相当于电脑屏幕
       orbitcontrols: null, // 控制器
-      map: null // 地图容器
+      map: null, // 地图容器
+      canvasObj: null
     }
   },
   mounted() {
@@ -22,6 +23,7 @@ export default {
     this.drawDialog()
     this.drawText()
     this.render()
+    document.body.addEventListener('click', this.mouseEvent.bind(this))
   },
   methods: {
     // 初始化3D环境
@@ -102,6 +104,13 @@ export default {
       let width = 512,
         height = 256
       let canvas = document.createElement('canvas')
+      // canvas.addEventListener(
+      //   'click',
+      //   function(e) {
+      //     console.log('点击')
+      //   },
+      //   false
+      // )
       canvas.width = width
       canvas.height = height
       let ctx = canvas.getContext('2d')
@@ -112,6 +121,7 @@ export default {
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillText(text, width / 2, height / 2)
+      this.canvasObj = canvas
       return canvas
     },
     elvesBounc(text) {
@@ -120,13 +130,36 @@ export default {
         map: new THREE.CanvasTexture(this.textStyle(text))
       })
       const sprite = new THREE.Sprite(spriteMaterial)
+      // sprite.userData = {
+      //   type: 'dropdown'
+      // }
       sprite.scale.set(10, 10, 1)
       return sprite
     },
     drawDialog() {
       let model = this.elvesBounc('我是小蜜蜂') //调用
-      model.position.set(0, 0, 0)
+      model.position.set(40, 10, 0)
       this.scene.add(model)
+    },
+    /**
+     * @desc 鼠标事件处理
+     */
+    mouseEvent(event) {
+      console.log('点击事件')
+      let raycaster = new THREE.Raycaster()
+      let mouse = new THREE.Vector2()
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+      raycaster.setFromCamera(mouse, this.camera)
+
+      // calculate objects intersecting the picking ray
+      var intersects = raycaster.intersectObjects(this.scene.children)
+
+      for (var i = 0; i < intersects.length; i++) {
+        intersects[i].object.material.color.set('#fff')
+      }
+
+      this.renderer.render(this.scene, this.camera)
     },
     // 渲染画布
     render() {}
